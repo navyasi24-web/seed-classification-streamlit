@@ -17,11 +17,11 @@ def download_model_from_drive(file_id, output_path, name):
 
 # Google Drive file IDs
 cnn_file_id = "1YLRXJyc8jL7vDGIQ_HslUD6IeoRxUqoH"
-mobilenet_file_id = "1YfhrMLJ0eqyyJPu1mezW7O4jUg7TuhSN"
+mobilenet_file_id = "1mrligU_-I4nmi4I-4VUXc3dvj-jxvSEg"
 
 # File paths
 cnn_model_path = "seed_shape_model.h5"
-mobilenet_model_path = "Mobilenet_tuned.h5"
+mobilenet_model_path = "Mobilenetv2_seed_final.h5"
 
 # Download models
 download_model_from_drive(cnn_file_id, cnn_model_path, "CNN")
