@@ -7,61 +7,61 @@ import gdown
 import os
 import matplotlib.pyplot as plt
 
-# ============ 1. Download CNN model from Google Drive ===============
-def download_model_from_drive(model_url, output_path):
+# ======================== MODEL DOWNLOAD ========================
+def download_model_from_drive(file_id, output_path, name):
     if not os.path.exists(output_path):
-        with st.spinner("Downloading CNN model from Google Drive..."):
-            gdown.download(model_url, output_path, quiet=False)
-            st.success("CNN model downloaded!")
+        with st.spinner(f"Downloading {name} model from Google Drive..."):
+            url = f'https://drive.google.com/uc?id={file_id}'
+            gdown.download(url, output_path, quiet=False)
+            st.success(f"{name} model downloaded!")
 
-cnn_model_url = "https://drive.google.com/uc?id=1YLRXJyc8jL7vDGIQ_HslUD6IeoRxUqoH"  # 🔁 Replace with real ID
+# Google Drive file IDs
+cnn_file_id = "1YLRXJyc8jL7vDGIQ_HslUD6IeoRxUqoH"
+mobilenet_file_id = "1YfhrMLJ0eqyyJPu1mezW7O4jUg7TuhSN"
+
+# File paths
 cnn_model_path = "seed_shape_model.h5"
-download_model_from_drive(cnn_model_url, cnn_model_path)
+mobilenet_model_path = "Mobilenet_tuned.h5"
 
-# ============ 2. Load Both Models =================
+# Download models
+download_model_from_drive(cnn_file_id, cnn_model_path, "CNN")
+download_model_from_drive(mobilenet_file_id, mobilenet_model_path, "MobileNetV2")
+
+# ======================== LOAD MODELS ========================
 with st.spinner("Loading models..."):
     cnn_model = load_model(cnn_model_path)
-    mobilenet_model = load_model("Mobilenet_tuned.h5")  # Should be <100MB
-    st.success("Both models loaded successfully!")
+    mobilenet_model = load_model(mobilenet_model_path)
+    st.success("Models loaded successfully!")
 
-# ============ 3. Define Classes ====================
+# ======================== UI ========================
 class_names = ['intact', 'broken', 'spotted', 'immature', 'skin-damaged']
 
-# ============ 4. Streamlit UI =====================
-st.title("Seed Shape Classification App 🌱")
-st.write("Choose a model and upload an image for prediction")
+st.title("🌱 Seed Shape Classification App")
+st.write("Upload a seed image and choose a model to classify it.")
 
 model_option = st.radio("Select Model", ['MobileNetV2', 'Custom CNN'])
+uploaded_file = st.file_uploader("Upload a seed image", type=["jpg", "jpeg", "png"])
 
-uploaded_file = st.file_uploader("Upload a Seed Image", type=["jpg", "png", "jpeg"])
-
-# ============ 5. Prediction =======================
-if uploaded_file is not None:
+if uploaded_file:
     image_data = Image.open(uploaded_file).convert("RGB")
     st.image(image_data, caption="Uploaded Image", use_column_width=True)
 
-    # Resize based on model
     if model_option == 'MobileNetV2':
         img_resized = image_data.resize((224, 224))
+        model = mobilenet_model
     else:
         img_resized = image_data.resize((227, 227))
+        model = cnn_model
 
     img_array = np.array(img_resized) / 255.0
     img_array = np.expand_dims(img_array, axis=0)
 
-    # Predict
-    if model_option == 'MobileNetV2':
-        prediction = mobilenet_model.predict(img_array)[0]
-    else:
-        prediction = cnn_model.predict(img_array)[0]
-
-    # Display prediction
+    prediction = model.predict(img_array)[0]
     top_class = class_names[np.argmax(prediction)]
     confidence = np.max(prediction) * 100
 
-    st.markdown(f"### 🧠 Prediction: `{top_class}` ({confidence:.2f}%)")
+    st.markdown(f"### 🧠 Prediction: `{top_class}` ({confidence:.2f}% confidence)")
 
-    # Show bar chart
     st.subheader("Class Probabilities")
     fig, ax = plt.subplots()
     ax.bar(class_names, prediction * 100)
@@ -69,7 +69,6 @@ if uploaded_file is not None:
     ax.set_ylim(0, 100)
     st.pyplot(fig)
 
-    # Print all class probabilities
     st.subheader("Raw Scores")
     for i, prob in enumerate(prediction):
         st.write(f"**{class_names[i]}**: {prob*100:.2f}%")
